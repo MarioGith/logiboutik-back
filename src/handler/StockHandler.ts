@@ -10,7 +10,7 @@ export const stockHandler: IStockHandler = {
   },
 };
 
-stockHandler.getStock = async function (res) {
+stockHandler.getStock = async function (req, res) {
   const docs = await stockModel.list();
   res.status(200).json(docs);
 };

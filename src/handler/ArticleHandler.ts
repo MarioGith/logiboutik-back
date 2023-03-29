@@ -28,7 +28,7 @@ export const articleHandler: IArticleHandler = {
 
 // HTTP
 
-articleHandler.getArticles = async (res) => {
+articleHandler.getArticles = async (req, res) => {
   const docs = await articleModel.list();
   res.status(200).json(docs);
 };

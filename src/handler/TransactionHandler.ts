@@ -28,7 +28,7 @@ export const transactionHandler: ITransactionHandler = {
 
 // HTTP
 
-transactionHandler.getTransactions = async (res) => {
+transactionHandler.getTransactions = async (req, res) => {
   const docs = await transactionModel.list();
   res.status(200).json(docs);
 };

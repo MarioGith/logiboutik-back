@@ -14,12 +14,12 @@ export const dashboardHandler: IDashboardHandler = {
   },
 };
 
-dashboardHandler.getTotalSell = async function (res) {
+dashboardHandler.getTotalSell = async function (req, res) {
   const docs = await dashboardModel.totalSell();
   res.status(200).json(docs);
 };
 
-dashboardHandler.getTotalIncome = async function (res) {
+dashboardHandler.getTotalIncome = async function (req, res) {
   const docs = await dashboardModel.totalIncome();
   res.status(200).json(docs);
 };

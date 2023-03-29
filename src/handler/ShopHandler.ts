@@ -26,7 +26,7 @@ export const shopHandler: IShopHandler = {
   },
 };
 
-shopHandler.getShops = async (res) => {
+shopHandler.getShops = async (req, res) => {
   const docs = await shopModel.list();
   res.status(200).json(docs);
 };
