@@ -1,0 +1,5 @@
+apps:
+  - name: logiboutik-back
+    script: ./dist/index.js
+    exec_mode: cluster
+    instances: max
