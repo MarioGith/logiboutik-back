@@ -33,5 +33,5 @@ app.use(
 
 // Listen
 app.listen(API_PORT, () => {
-  console.log('Logiboutik API is up');
+  console.log('Logiboutik API is up and working');
 });
