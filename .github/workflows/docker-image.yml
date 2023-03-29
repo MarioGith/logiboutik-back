@@ -1,3 +1,4 @@
+
 name: Docker Image CI
 
 on:
@@ -14,5 +15,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: docker hub login
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_USER }}/logiboutik-back:$(date +%s) --tag ${{ secrets.DOCKER_USER }}/logiboutik-back:latest 
+    
+    - name: Docker Push
+      run: docker push --all-tags ${{secrets.DOCKER_USER}}/logiboutik-back
+    
