@@ -1,13 +1,13 @@
+import { Request, Response } from 'express';
 import { shopModel } from '../model';
-
+import { Types } from 'mongoose';
 interface IShopHandler {
-  getShops: (req: any, res: any) => Promise<void>;
-  get: (req: any, res: any) => Promise<void>;
-  post: (req: any, res: any) => Promise<void>;
-  put: (req: any, res: any) => Promise<void>;
-  delete: (req: any, res: any) => Promise<void>;
+  getShops: (req: Request, res: Response) => Promise<void>;
+  get: (req: Request, res: Response) => Promise<void>;
+  post: (req: Request, res: Response) => Promise<void>;
+  put: (req: Request, res: Response) => Promise<void>;
+  delete: (req: Request, res: Response) => Promise<void>;
 }
-
 export const shopHandler: IShopHandler = {
   getShops: function (): Promise<void> {
     throw new Error('Function not implemented.');
@@ -32,7 +32,7 @@ shopHandler.getShops = async (req, res) => {
 };
 
 shopHandler.get = async (req, res) => {
-  const docs = await shopModel.read(req.params._id);
+  const docs = await shopModel.read(Types.ObjectId(req.params._id));
   res.status(200).json(docs);
 };
 
@@ -47,7 +47,7 @@ shopHandler.post = async (req, res) => {
 
 shopHandler.put = async (req, res) => {
   const docs = await shopModel.update(req.body);
-  if (docs === 'Shop modified') {
+  if (docs.message === 'Shop modified') {
     res.status(200).send({ message: 'Shop modified' });
   } else {
     res.status(500).send({ message: 'Error' });
@@ -55,6 +55,6 @@ shopHandler.put = async (req, res) => {
 };
 
 shopHandler.delete = async (req, res) => {
-  await shopModel.delete(req.params._id);
+  await shopModel.delete(Types.ObjectId(req.params._id));
   res.status(200).send();
 };

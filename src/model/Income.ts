@@ -22,12 +22,12 @@ incomeModel.list = async function (startDate = '', endDate = '') {
   });
   sellingTransactions = sellingTransactions.reduce(function (
     pv: { [x: string]: any },
-    cv: { articleId: string | number; quantity: any }
+    cv: { article: { _id: string; name: string }; quantity: any }
   ) {
-    if (pv[cv.articleId]) {
-      pv[cv.articleId] += cv.quantity;
+    if (pv[cv.article._id]) {
+      pv[cv.article._id] += cv.quantity;
     } else {
-      pv[cv.articleId] = cv.quantity;
+      pv[cv.article._id] = cv.quantity;
     }
     return pv;
   },
@@ -41,8 +41,8 @@ incomeModel.list = async function (startDate = '', endDate = '') {
       finalIncome = [
         ...finalIncome,
         {
-          name: art.details[0].name,
-          price: art.details[0].price,
+          name: art.details.name,
+          price: art.details.price,
           quantity: sellingTransactions[trans],
         },
       ];

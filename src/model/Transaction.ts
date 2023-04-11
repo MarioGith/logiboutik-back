@@ -10,97 +10,75 @@ interface ITransactionModel {
 }
 
 export const transactionModel: ITransactionModel = {
-  list: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  create: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  read: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  update: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  delete: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-};
-
-// List
-transactionModel.list = async function (filter = {}) {
-  return await transactionSchema
-    .find(filter, function (err, transactions) {
-      if (err) {
-        return err;
-      } else {
-        return transactions;
-      }
-    })
-    .sort('-date');
-};
-
-// CRUD
-
-// Create
-transactionModel.create = async function (newTransaction) {
-  const _transaction = new transactionSchema();
-  _transaction.articleId = newTransaction.articleId;
-  _transaction.date = newTransaction.date;
-  _transaction.quantity = newTransaction.quantity;
-  _transaction.transaction_type = newTransaction.transaction_type;
-  _transaction.save(function (err) {
-    if (err) {
-      return err;
+  list: async function (filter = {}) {
+    try {
+      const transactions = await transactionSchema
+        .find(filter)
+        .populate('article', 'name')
+        .sort('-date');
+      return transactions;
+    } catch (err) {
+      console.error('Error listing transactions:', err);
+      throw err;
     }
-  });
-  return { message: 'Transaction registred' };
-};
+  },
 
-// Read
-transactionModel.read = async function (_id) {
-  return await transactionSchema.find(
-    { _id: _id },
-    function (err, _transaction) {
-      if (err) {
-        return err;
-      } else {
-        return _transaction;
-      }
+  create: async function (newArticle) {
+    try {
+      const _transaction = new transactionSchema({
+        article: newArticle.article,
+        date: newArticle.date,
+        quantity: newArticle.quantity,
+        transaction_type: newArticle.transaction_type,
+      });
+      await _transaction.save();
+      return { message: 'Transaction registered' };
+    } catch (err) {
+      console.error('Error creating transaction:', err);
+      throw err;
     }
-  );
-};
+  },
 
-// Update
-transactionModel.update = async function (updatedTransaction) {
-  return await transactionSchema.findByIdAndUpdate(
-    { _id: updatedTransaction._id },
-    {
-      articleId: updatedTransaction.articleId,
-      date: updatedTransaction.date,
-      quantity: updatedTransaction.quantity,
-      transaction_type: updatedTransaction.transaction_type,
-    },
-    function (err) {
-      if (err) {
-        return err;
-      } else {
-        return { message: 'Transaction modified' };
-      }
+  read: async function (_id) {
+    try {
+      const _transaction = await transactionSchema.find({ _id });
+      return _transaction;
+    } catch (err) {
+      console.error('Error reading transaction:', err);
+      throw err;
     }
-  );
-};
+  },
 
-// Delete
-transactionModel.delete = async function (_id) {
-  return await transactionSchema
-    .findByIdAndDelete({ _id: _id })
-    .then(() => {
-      return {
-        message: 'Transaction deleted',
-      };
-    })
-    .catch((err: any) => {
-      return err;
-    });
+  update: async function (updatedTransaction) {
+    try {
+      const updated = await transactionSchema.findByIdAndUpdate(
+        { _id: updatedTransaction._id },
+        {
+          article: updatedTransaction.article,
+          date: updatedTransaction.date,
+          quantity: updatedTransaction.quantity,
+          transaction_type: updatedTransaction.transaction_type,
+        },
+        { new: true }
+      );
+      if (updated) {
+        return { message: 'Transaction modified', data: updated };
+      } else {
+        return { message: 'Transaction not found', data: null };
+      }
+    } catch (err) {
+      console.error('Error updating transaction:', err);
+      throw err;
+    }
+  },
+
+  delete: async function (_id) {
+    try {
+      await transactionSchema.findByIdAndDelete({ _id: _id });
+      return { message: 'Transaction deleted' };
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+      throw err;
+    }
+  },
 };

@@ -1,106 +1,89 @@
-import { shopSchema } from '../schema';
+import { shopSchema, ShopDoc } from '../schema';
 import { shopValidator } from '../validator';
 import { articleModel } from '.';
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 
 interface IShopModel {
-  list: (filter?: any) => Promise<any>;
-  create: (newShop: any) => Promise<any>;
-  read: (_id: mongoose.Types.ObjectId) => Promise<any>;
-  update: (updatedShop: any) => Promise<any>;
-  delete: (_id: mongoose.Types.ObjectId) => Promise<any>;
+  list: (filter?: any) => Promise<Array<ShopDoc>>;
+  create: (newShop: any) => Promise<string>;
+  read: (
+    _id: Types.ObjectId
+  ) => Promise<{ articles: any; details: ShopDoc | null }>;
+  update: (
+    updatedShop: any
+  ) => Promise<{ message: string; data: ShopDoc | null }>;
+  delete: (_id: Types.ObjectId) => Promise<{ message: string; data?: any }>;
 }
 
 export const shopModel: IShopModel = {
-  list: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  create: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  read: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  update: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  delete: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-};
-
-// List
-shopModel.list = async function (filter = {}) {
-  return await shopSchema.find(filter, function (err, shops) {
-    if (err) {
-      return err;
-    } else {
+  list: async function (filter = {}) {
+    try {
+      const shops = await shopSchema.find(filter);
       return shops;
+    } catch (err: any) {
+      console.error('Error listing shops:', err);
+      return [];
     }
-  });
-};
+  },
 
-// CRUD
-
-// Create
-shopModel.create = async function (newShop) {
-  const alreadyExist = await shopValidator(newShop.name);
-  let saved = false;
-  if (!alreadyExist) {
-    const _shop = new shopSchema();
-    _shop.name = newShop.name;
-    _shop.save(function (err) {
-      if (err) {
-        return err;
-      }
-    });
-    saved = true;
-  }
-  if (saved) {
-    return 'Shop registred';
-  }
-};
-
-// Read
-shopModel.read = async function (_id) {
-  const articles = await articleModel.list({ shopId: _id });
-  const details = await shopSchema.find({ _id: _id }, function (err, _shop) {
-    if (err) {
-      return err;
-    } else {
-      return _shop;
-    }
-  });
-  return { articles: articles, details: details };
-};
-
-// Update
-shopModel.update = async function (updatedShop) {
-  return await shopSchema.findByIdAndUpdate(
-    { _id: updatedShop._id },
-    {
-      name: updatedShop.name,
-    },
-    function (err) {
-      if (err) {
-        return err;
+  create: async function (newShop) {
+    try {
+      const alreadyExist = await shopValidator(newShop.name);
+      if (!alreadyExist) {
+        const _shop = new shopSchema();
+        _shop.name = newShop.name;
+        await _shop.save();
+        return 'Shop registered';
       } else {
-        return { message: 'Shop modified' };
+        throw new Error('Shop already exists');
       }
+    } catch (err: any) {
+      console.error('Error creating shop:', err);
+      return err.message;
     }
-  );
-};
+  },
 
-// Delete
-shopModel.delete = async function (_id) {
-  return await shopSchema
-    .findByIdAndDelete({ _id: _id })
-    .then(() => {
+  read: async function (_id) {
+    try {
+      const articles = await articleModel.list({ shop: _id });
+      const details = await shopSchema.findById(_id);
+      return { articles: articles, details: details };
+    } catch (err: any) {
+      console.error('Error reading shop:', err);
+      return { articles: [], details: null };
+    }
+  },
+
+  update: async function (updatedShop) {
+    try {
+      const updated = await shopSchema.findByIdAndUpdate(
+        { _id: updatedShop._id },
+        {
+          name: updatedShop.name,
+        },
+        { new: true } // This option returns the modified document rather than the original
+      );
+
+      if (updated) {
+        return { message: 'Shop modified', data: updated };
+      } else {
+        return { message: 'Shop not found', data: null };
+      }
+    } catch (err: any) {
+      console.error('Error updating shop:', err);
+      return { message: 'Error updating shop', data: null };
+    }
+  },
+
+  delete: async function (_id) {
+    try {
+      await shopSchema.findByIdAndDelete({ _id: _id });
       return {
         message: 'Shop deleted',
       };
-    })
-    .catch((err: any) => {
-      return err;
-    });
+    } catch (err: any) {
+      console.error('Error deleting shop:', err);
+      return { message: 'Error deleting shop' };
+    }
+  },
 };

@@ -36,14 +36,15 @@ dashboardModel.totalIncome = async function () {
   let sellingTransactions = await transactionModel.list({
     transaction_type: 'sell',
   });
+
   sellingTransactions = sellingTransactions.reduce(function (
     pv: { [x: string]: any },
-    cv: { articleId: string | number; quantity: any }
+    cv: { article: { _id: string; name: string }; quantity: any }
   ) {
-    if (pv[cv.articleId]) {
-      pv[cv.articleId] += cv.quantity;
+    if (pv[cv.article._id]) {
+      pv[cv.article._id] += cv.quantity;
     } else {
-      pv[cv.articleId] = cv.quantity;
+      pv[cv.article._id] = cv.quantity;
     }
     return pv;
   },
@@ -54,7 +55,7 @@ dashboardModel.totalIncome = async function () {
   for (const trans in sellingTransactions) {
     const art = await articleModel.read(mongoose.Types.ObjectId(trans));
     if (sellingTransactions[trans] > 0) {
-      totalIncome += art.details[0].price * sellingTransactions[trans];
+      totalIncome += art.details.price * sellingTransactions[trans];
     }
   }
 

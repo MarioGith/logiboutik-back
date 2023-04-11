@@ -3,15 +3,15 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 export interface TransactionDoc extends mongoose.Document {
-  articleId: mongoose.Schema.Types.ObjectId;
+  article: mongoose.Schema.Types.ObjectId;
   date: Date;
   quantity: number;
   transaction_type: string;
 }
 
 const TransactionSchema = new Schema({
-  articleId: {
-    ref: '_id',
+  article: {
+    ref: 'Article',
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },

@@ -5,7 +5,7 @@ const { Schema } = mongoose;
 export interface ArticleDoc extends mongoose.Document {
   name: string;
   price: number;
-  shopId: mongoose.Schema.Types.ObjectId;
+  shop: mongoose.Schema.Types.ObjectId;
 }
 
 const ArticleSchema = new Schema({
@@ -17,9 +17,10 @@ const ArticleSchema = new Schema({
     type: Number,
     required: true,
   },
-  shopId: {
-    ref: '_id',
+  shop: {
+    ref: 'Shop',
     type: mongoose.Schema.Types.ObjectId,
+    requiered: true,
   },
 });
 

@@ -1,5 +1,12 @@
-import { articleSchema } from './ArticleSchema';
-import { shopSchema } from './ShopSchema';
-import { transactionSchema } from './TransactionSchema';
+import { articleSchema, ArticleDoc } from './ArticleSchema';
+import { shopSchema, ShopDoc } from './ShopSchema';
+import { transactionSchema, TransactionDoc } from './TransactionSchema';
 
-export { articleSchema, shopSchema, transactionSchema };
+export {
+  articleSchema,
+  ArticleDoc,
+  shopSchema,
+  ShopDoc,
+  transactionSchema,
+  TransactionDoc,
+};

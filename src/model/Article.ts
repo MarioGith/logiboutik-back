@@ -1,122 +1,111 @@
-import { articleSchema } from '../schema';
+import { articleSchema, ArticleDoc, TransactionDoc } from '../schema';
 import { articleValidator } from '../validator';
 import { transactionModel } from '.';
 import mongoose from 'mongoose';
 
 interface IArticleModel {
   list: (filter?: any) => Promise<any>;
-  create: (newArticle: any) => Promise<any>;
+  create: (newArticle: ArticleDoc) => Promise<{ message: string }>;
   read: (_id: mongoose.Types.ObjectId) => Promise<any>;
-  update: (updatedArticle: any) => Promise<any>;
+  update: (
+    updatedArticle: ArticleDoc
+  ) => Promise<{ message: string; data?: ArticleDoc | null; error?: any }>;
   delete: (_id: mongoose.Types.ObjectId) => Promise<any>;
 }
 
 export const articleModel: IArticleModel = {
-  list: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  create: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  read: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  update: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-  delete: function (): Promise<any> {
-    throw new Error('Function not implemented.');
-  },
-};
-
-// List
-articleModel.list = async function (filter = {}) {
-  return await articleSchema.find(filter, function (err, articles) {
-    if (err) {
-      return err;
-    } else {
+  list: async function (filter = {}) {
+    try {
+      const articles = await articleSchema
+        .find(filter)
+        .populate('shop', 'name');
       return articles;
+    } catch (err) {
+      console.error('Error listing articles:', err);
+      throw err;
     }
-  });
-};
+  },
 
-// CRUD
+  create: async function (newArticle) {
+    try {
+      const alreadyExist = await articleValidator(newArticle.name);
+      if (alreadyExist) {
+        return { message: 'Article already exists' };
+      }
 
-// Create
-articleModel.create = async function (newArticle) {
-  const alreadyExist = await articleValidator(newArticle.name);
-  let saved = false;
-  if (!alreadyExist) {
-    const _article = new articleSchema();
-    _article.name = newArticle.name;
-    _article.price = newArticle.price;
-    _article.shopId = newArticle.shopId;
-    _article.save(function (err) {
-      if (err) {
-        return err;
-      }
-    });
-    saved = true;
-  }
-  if (saved) {
-    return 'Article registred';
-  }
-};
+      const _article = new articleSchema({
+        name: newArticle.name,
+        price: newArticle.price,
+        shop: newArticle.shop,
+      });
 
-// Read
-articleModel.read = async function (_id) {
-  const historic = await transactionModel.list({ articleId: _id });
-  const stock = historic.reduce(
-    (pv: number, cv: { transaction_type: string; quantity: number }) => {
-      if (cv.transaction_type === 'deposite') {
-        return pv + cv.quantity;
-      } else {
-        return pv - cv.quantity;
-      }
-    },
-    0
-  );
-  const details = await articleSchema.find(
-    { _id: _id },
-    function (err, _article) {
-      if (err) {
-        return err;
-      } else {
-        return _article;
-      }
+      await _article.save();
+      return { message: 'Article registered' };
+    } catch (err) {
+      console.error('Error creating article:', err);
+      throw err;
     }
-  );
-  return { historic: historic, details: details, stock: stock };
-};
+  },
 
-// Update
-articleModel.update = async function (updatedArticle) {
-  return await articleSchema.findByIdAndUpdate(
-    { _id: updatedArticle._id },
-    {
-      name: updatedArticle.name,
-      price: updatedArticle.price,
-      shopId: updatedArticle.shopId,
-    },
-    function (err) {
-      if (err) {
-        return err;
-      } else {
-        return 'Article modified';
-      }
+  read: async function (_id) {
+    try {
+      const historic = await transactionModel.list({ article: _id });
+      const stock = historic.reduce(
+        (pv: number, cv: { transaction_type: string; quantity: number }) => {
+          if (cv.transaction_type === 'deposite') {
+            return pv + cv.quantity;
+          } else {
+            return pv - cv.quantity;
+          }
+        },
+        0
+      );
+      const details = await articleSchema.findById(_id);
+      return { historic: historic, details: details, stock: stock };
+    } catch (err) {
+      console.error('Error reading article:', err);
+      throw err;
     }
-  );
-};
+  },
 
-// Delete
-articleModel.delete = async function (_id) {
-  const transactions = await transactionModel.list({ articleId: _id });
+  update: async function (updatedArticle) {
+    try {
+      const updated = await articleSchema.findByIdAndUpdate(
+        { _id: updatedArticle._id },
+        {
+          name: updatedArticle.name,
+          price: updatedArticle.price,
+          shop: updatedArticle.shop,
+        },
+        { new: true }
+      );
 
-  await transactions.forEach(async (trans: { _id: any }) => {
-    await transactionModel.delete(trans._id);
-  });
+      if (updated) {
+        return { message: 'Article modified', data: updated };
+      } else {
+        return { message: 'Article not found', data: null };
+      }
+    } catch (err) {
+      console.error('Error updating article:', err);
+      return { message: 'Error updating article', error: err };
+    }
+  },
 
-  return await articleSchema.findByIdAndDelete({ _id: _id }).catch((err) => {
-    return err;
-  });
+  delete: async function (_id) {
+    try {
+      const transactions = await transactionModel.list({ article: _id });
+
+      await Promise.all(
+        transactions.map(async (trans: TransactionDoc) => {
+          await transactionModel.delete(trans._id);
+        })
+      );
+
+      await articleSchema.findByIdAndDelete({ _id: _id });
+      return { message: 'Article deleted' };
+    } catch (err) {
+      console.error('Error deleting article:', err);
+      throw err;
+    }
+  },
 };

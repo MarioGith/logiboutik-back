@@ -40,8 +40,8 @@ transactionHandler.get = async (req, res) => {
 
 transactionHandler.post = async (req, res) => {
   const docs = await transactionModel.create(req.body);
-  if (docs === 'Transaction registred') {
-    res.status(200).send({ message: 'Transaction registred' });
+  if (docs.message === 'Transaction registered') {
+    res.status(200).send({ message: 'Transaction registered' });
   } else {
     res.status(500).send({ message: 'Error' });
   }
@@ -49,7 +49,7 @@ transactionHandler.post = async (req, res) => {
 
 transactionHandler.put = async (req, res) => {
   const docs = await transactionModel.update(req.body);
-  if (docs === 'Transaction modified') {
+  if (docs.message === 'Transaction modified') {
     res.status(200).send({ message: 'Transaction modified' });
   } else {
     res.status(500).send({ message: 'Error' });

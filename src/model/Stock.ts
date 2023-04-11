@@ -17,22 +17,22 @@ stockModel.list = async function () {
   organizedTransactions = organizedTransactions.reduce(function (
     pv: { [x: string]: number },
     cv: {
-      articleId: string | number;
+      article: { _id: string; name: string };
       transaction_type: string;
       quantity: number;
     }
   ) {
-    if (pv[cv.articleId]) {
+    if (pv[cv.article._id]) {
       if (cv.transaction_type === 'deposite') {
-        pv[cv.articleId] += cv.quantity;
+        pv[cv.article._id] += cv.quantity;
       } else {
-        pv[cv.articleId] -= cv.quantity;
+        pv[cv.article._id] -= cv.quantity;
       }
     } else {
       if (cv.transaction_type === 'deposite') {
-        pv[cv.articleId] = cv.quantity;
+        pv[cv.article._id] = cv.quantity;
       } else {
-        pv[cv.articleId] = -cv.quantity;
+        pv[cv.article._id] = -cv.quantity;
       }
     }
     return pv;
@@ -40,14 +40,16 @@ stockModel.list = async function () {
 
   let finalStock: any[] = [];
 
+  console.log(organizedTransactions);
+
   for (const trans in organizedTransactions) {
     const art = await articleModel.read(mongoose.Types.ObjectId(trans));
     if (organizedTransactions[trans] > 0) {
       finalStock = [
         ...finalStock,
         {
-          name: art.details[0].name,
-          price: art.details[0].price,
+          name: art.details.name,
+          price: art.details.price,
           quantity: organizedTransactions[trans],
         },
       ];

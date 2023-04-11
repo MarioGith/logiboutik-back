@@ -40,8 +40,8 @@ articleHandler.get = async (req, res) => {
 
 articleHandler.post = async (req, res) => {
   const docs = await articleModel.create(req.body);
-  if (docs === 'Article registred') {
-    res.status(200).send({ message: 'Article registred' });
+  if (docs.message === 'Article registered') {
+    res.status(200).send({ message: 'Article registered' });
   } else {
     res.status(500).send({ message: 'Article already exists' });
   }
@@ -49,7 +49,7 @@ articleHandler.post = async (req, res) => {
 
 articleHandler.put = async (req, res) => {
   const docs = await articleModel.update(req.body);
-  if (docs === 'Article modified') {
+  if (docs.message === 'Article modified') {
     res.status(200).send({ message: 'Article modified' });
   } else {
     res.status(500).send({ message: 'Error' });

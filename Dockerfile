@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm i               
 COPY . .                
 RUN npm run build    
-EXPOSE ${PORT}
+EXPOSE ${API_PORT}
 ENTRYPOINT [ "npm", "run", "dev" ]
 
 FROM node AS final
@@ -19,5 +19,5 @@ COPY package*.json process.yml ./
 USER node
 RUN npm i --only=production
 COPY --chown=node:node --from=builder /app/dist ./dist
-EXPOSE ${PORT}
+EXPOSE ${API_PORT}
 ENTRYPOINT ["pm2-runtime", "./process.yml"] 
