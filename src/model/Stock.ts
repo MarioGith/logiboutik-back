@@ -1,6 +1,5 @@
 import { transactionModel } from '.';
 import { articleModel } from '.';
-import mongoose from 'mongoose';
 
 interface IStockModel {
   list: () => Promise<any>;
@@ -40,14 +39,23 @@ stockModel.list = async function () {
 
   let finalStock: any[] = [];
 
+  // Batch-fetch the referenced articles in one query instead of calling
+  // articleModel.read() per article (which re-scanned every transaction).
+  const ids = Object.keys(organizedTransactions);
+  const articles = await articleModel.list({ _id: { $in: ids } });
+  const articlesById: { [id: string]: any } = {};
+  articles.forEach((a: any) => {
+    articlesById[String(a._id)] = a;
+  });
+
   for (const trans in organizedTransactions) {
-    const art = await articleModel.read(mongoose.Types.ObjectId(trans));
-    if (organizedTransactions[trans] > 0) {
+    const art = articlesById[trans];
+    if (art && organizedTransactions[trans] > 0) {
       finalStock = [
         ...finalStock,
         {
-          name: art.details.name,
-          price: art.details.price,
+          name: art.name,
+          price: art.price,
           quantity: organizedTransactions[trans],
         },
       ];

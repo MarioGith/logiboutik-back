@@ -1,6 +1,5 @@
 import { transactionModel } from '.';
 import { articleModel } from '.';
-import mongoose from 'mongoose';
 
 interface IIncomeModel {
   list: (startDate?: string, endDate?: string) => Promise<any>;
@@ -35,14 +34,23 @@ incomeModel.list = async function (startDate = '', endDate = '') {
 
   let finalIncome: any[] = [];
 
+  // Batch-fetch the referenced articles in one query instead of calling
+  // articleModel.read() per article (which re-scanned every transaction).
+  const ids = Object.keys(sellingTransactions);
+  const articles = await articleModel.list({ _id: { $in: ids } });
+  const articlesById: { [id: string]: any } = {};
+  articles.forEach((a: any) => {
+    articlesById[String(a._id)] = a;
+  });
+
   for (const trans in sellingTransactions) {
-    const art = await articleModel.read(mongoose.Types.ObjectId(trans));
-    if (sellingTransactions[trans] > 0) {
+    const art = articlesById[trans];
+    if (art && sellingTransactions[trans] > 0) {
       finalIncome = [
         ...finalIncome,
         {
-          name: art.details.name,
-          price: art.details.price,
+          name: art.name,
+          price: art.price,
           quantity: sellingTransactions[trans],
         },
       ];

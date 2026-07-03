@@ -13,4 +13,8 @@ const ShopSchema = new Schema({
   },
 });
 
+// Shops are looked up by name in the uniqueness validator.
+// Not unique yet — see de-dup note.
+ShopSchema.index({ name: 1 });
+
 export const shopSchema = mongoose.model<ShopDoc>('Shop', ShopSchema);

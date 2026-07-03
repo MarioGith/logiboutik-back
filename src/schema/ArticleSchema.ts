@@ -24,6 +24,11 @@ const ArticleSchema = new Schema({
   },
 });
 
+// Indexes for the fields used in filtering (articles listed by shop, looked up
+// by name in the uniqueness validator). Not unique yet — see de-dup note.
+ArticleSchema.index({ shop: 1 });
+ArticleSchema.index({ name: 1 });
+
 export const articleSchema = mongoose.model<ArticleDoc>(
   'Article',
   ArticleSchema

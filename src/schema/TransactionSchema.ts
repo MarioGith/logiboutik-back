@@ -29,6 +29,12 @@ const TransactionSchema = new Schema({
   },
 });
 
+// Indexes for the fields used in filtering/sorting (list is sorted by -date,
+// income/dashboard/stock filter by transaction_type and group by article).
+TransactionSchema.index({ article: 1 });
+TransactionSchema.index({ date: -1 });
+TransactionSchema.index({ transaction_type: 1 });
+
 export const transactionSchema = mongoose.model<TransactionDoc>(
   'Transaction',
   TransactionSchema
