@@ -38,10 +38,10 @@ shopHandler.get = async (req, res) => {
 
 shopHandler.post = async (req, res) => {
   const docs = await shopModel.create(req.body);
-  if (docs === 'Shop registred') {
-    res.status(200).send({ message: 'Shop registred' });
+  if (docs === 'Shop registered') {
+    res.status(200).send({ message: 'Shop registered' });
   } else {
-    res.status(500).send({ message: 'Shop already exists' });
+    res.status(409).send({ message: docs });
   }
 };
 
@@ -49,6 +49,8 @@ shopHandler.put = async (req, res) => {
   const docs = await shopModel.update(req.body);
   if (docs.message === 'Shop modified') {
     res.status(200).send({ message: 'Shop modified' });
+  } else if (docs.message === 'Shop not found') {
+    res.status(404).send({ message: docs.message });
   } else {
     res.status(500).send({ message: 'Error' });
   }

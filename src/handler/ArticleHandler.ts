@@ -43,7 +43,7 @@ articleHandler.post = async (req, res) => {
   if (docs.message === 'Article registered') {
     res.status(200).send({ message: 'Article registered' });
   } else {
-    res.status(500).send({ message: 'Article already exists' });
+    res.status(409).send({ message: 'Article already exists' });
   }
 };
 
@@ -51,6 +51,8 @@ articleHandler.put = async (req, res) => {
   const docs = await articleModel.update(req.body);
   if (docs.message === 'Article modified') {
     res.status(200).send({ message: 'Article modified' });
+  } else if (docs.message === 'Article not found') {
+    res.status(404).send({ message: docs.message });
   } else {
     res.status(500).send({ message: 'Error' });
   }

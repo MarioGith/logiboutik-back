@@ -20,7 +20,7 @@ const ArticleSchema = new Schema({
   shop: {
     ref: 'Shop',
     type: mongoose.Schema.Types.ObjectId,
-    requiered: true,
+    required: true,
   },
 });
 

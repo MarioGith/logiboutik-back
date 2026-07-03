@@ -3,6 +3,7 @@ import { shopHandler } from './ShopHandler';
 import { transactionHandler } from './TransactionHandler';
 import { stockHandler } from './StockHandler';
 import { incomeHandler } from './IncomeHandler';
+import { backupHandler } from './BackupHandler';
 
 export {
   articleHandler,
@@ -10,4 +11,5 @@ export {
   transactionHandler,
   stockHandler,
   incomeHandler,
+  backupHandler,
 };

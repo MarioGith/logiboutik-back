@@ -40,8 +40,6 @@ stockModel.list = async function () {
 
   let finalStock: any[] = [];
 
-  console.log(organizedTransactions);
-
   for (const trans in organizedTransactions) {
     const art = await articleModel.read(mongoose.Types.ObjectId(trans));
     if (organizedTransactions[trans] > 0) {

@@ -51,6 +51,8 @@ transactionHandler.put = async (req, res) => {
   const docs = await transactionModel.update(req.body);
   if (docs.message === 'Transaction modified') {
     res.status(200).send({ message: 'Transaction modified' });
+  } else if (docs.message === 'Transaction not found') {
+    res.status(404).send({ message: docs.message });
   } else {
     res.status(500).send({ message: 'Error' });
   }
