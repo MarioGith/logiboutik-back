@@ -1,64 +1,33 @@
+import { Request, Response } from 'express';
 import { transactionModel } from '../model';
+import { parseTransactionInput } from '../validator';
 
-interface ITransactionHandler {
-  getTransactions: (req: any, res: any) => Promise<void>;
-  get: (req: any, res: any) => Promise<void>;
-  post: (req: any, res: any) => Promise<void>;
-  put: (req: any, res: any) => Promise<void>;
-  delete: (req: any, res: any) => Promise<void>;
-}
-
-export const transactionHandler: ITransactionHandler = {
-  getTransactions: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+export const transactionHandler = {
+  async list(req: Request, res: Response) {
+    res.json(await transactionModel.list());
   },
-  get: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  // Answers with a one-element array: that is the format the front-end has
+  // always read, kept so old and new front-ends both work.
+  async get(req: Request, res: Response) {
+    res.json([await transactionModel.read(req.params._id)]);
   },
-  post: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async create(req: Request, res: Response) {
+    await transactionModel.create(parseTransactionInput(req.body));
+    res.json({ message: 'Transaction registered' });
   },
-  put: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async update(req: Request, res: Response) {
+    await transactionModel.update(
+      req.params._id,
+      parseTransactionInput(req.body),
+    );
+    res.json({ message: 'Transaction modified' });
   },
-  delete: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async delete(req: Request, res: Response) {
+    await transactionModel.delete(req.params._id);
+    res.status(200).send();
   },
-};
-
-// HTTP
-
-transactionHandler.getTransactions = async (req, res) => {
-  const docs = await transactionModel.list();
-  res.status(200).json(docs);
-};
-
-transactionHandler.get = async (req, res) => {
-  const docs = await transactionModel.read(req.params._id);
-  res.status(200).json(docs);
-};
-
-transactionHandler.post = async (req, res) => {
-  const docs = await transactionModel.create(req.body);
-  if (docs.message === 'Transaction registered') {
-    res.status(200).send({ message: 'Transaction registered' });
-  } else {
-    res.status(500).send({ message: 'Error' });
-  }
-};
-
-transactionHandler.put = async (req, res) => {
-  const docs = await transactionModel.update(req.body);
-  if (docs.message === 'Transaction modified') {
-    res.status(200).send({ message: 'Transaction modified' });
-  } else if (docs.message === 'Transaction not found') {
-    res.status(404).send({ message: docs.message });
-  } else {
-    res.status(500).send({ message: 'Error' });
-  }
-};
-
-transactionHandler.delete = async (req, res) => {
-  await transactionModel.delete(req.params._id);
-  res.status(200).send();
 };

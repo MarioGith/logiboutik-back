@@ -1,62 +1,28 @@
 import { Request, Response } from 'express';
 import { shopModel } from '../model';
-import { Types } from 'mongoose';
-interface IShopHandler {
-  getShops: (req: Request, res: Response) => Promise<void>;
-  get: (req: Request, res: Response) => Promise<void>;
-  post: (req: Request, res: Response) => Promise<void>;
-  put: (req: Request, res: Response) => Promise<void>;
-  delete: (req: Request, res: Response) => Promise<void>;
-}
-export const shopHandler: IShopHandler = {
-  getShops: function (): Promise<void> {
-    throw new Error('Function not implemented.');
-  },
-  get: function (): Promise<void> {
-    throw new Error('Function not implemented.');
-  },
-  post: function (): Promise<void> {
-    throw new Error('Function not implemented.');
-  },
-  put: function (): Promise<void> {
-    throw new Error('Function not implemented.');
-  },
-  delete: function (): Promise<void> {
-    throw new Error('Function not implemented.');
-  },
-};
+import { parseShopInput } from '../validator';
 
-shopHandler.getShops = async (req, res) => {
-  const docs = await shopModel.list();
-  res.status(200).json(docs);
-};
+export const shopHandler = {
+  async list(req: Request, res: Response) {
+    res.json(await shopModel.list());
+  },
 
-shopHandler.get = async (req, res) => {
-  const docs = await shopModel.read(Types.ObjectId(req.params._id));
-  res.status(200).json(docs);
-};
+  async get(req: Request, res: Response) {
+    res.json(await shopModel.read(req.params._id));
+  },
 
-shopHandler.post = async (req, res) => {
-  const docs = await shopModel.create(req.body);
-  if (docs === 'Shop registered') {
-    res.status(200).send({ message: 'Shop registered' });
-  } else {
-    res.status(409).send({ message: docs });
-  }
-};
+  async create(req: Request, res: Response) {
+    await shopModel.create(parseShopInput(req.body));
+    res.json({ message: 'Shop registered' });
+  },
 
-shopHandler.put = async (req, res) => {
-  const docs = await shopModel.update(req.body);
-  if (docs.message === 'Shop modified') {
-    res.status(200).send({ message: 'Shop modified' });
-  } else if (docs.message === 'Shop not found') {
-    res.status(404).send({ message: docs.message });
-  } else {
-    res.status(500).send({ message: 'Error' });
-  }
-};
+  async update(req: Request, res: Response) {
+    await shopModel.update(req.params._id, parseShopInput(req.body));
+    res.json({ message: 'Shop modified' });
+  },
 
-shopHandler.delete = async (req, res) => {
-  await shopModel.delete(Types.ObjectId(req.params._id));
-  res.status(200).send();
+  async delete(req: Request, res: Response) {
+    await shopModel.delete(req.params._id);
+    res.status(200).send();
+  },
 };
