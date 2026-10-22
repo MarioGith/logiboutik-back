@@ -8,12 +8,16 @@ interface ArticleInput {
   shop: string;
 }
 
-async function checkInput(input: ArticleInput, exceptId?: string) {
+// `currentName` is the name before an update: keeping it is always allowed,
+// so articles that already share a name (older data) stay editable.
+async function checkInput(input: ArticleInput, currentName?: string) {
   if (!(await Shop.exists({ _id: input.shop }))) {
     throw badRequest('shop does not exist');
   }
-  const existing = await Article.findOne({ name: input.name });
-  if (existing && String(existing._id) !== exceptId) {
+  if (
+    input.name !== currentName &&
+    (await Article.exists({ name: input.name }))
+  ) {
     throw conflict('article_exists', 'Article already exists');
   }
 }
@@ -40,10 +44,10 @@ export const articleModel = {
   },
 
   async update(id: string, input: ArticleInput) {
-    await checkInput(input, id);
-    const updated = await Article.findByIdAndUpdate(id, input, { new: true });
-    if (!updated) throw notFound('Article');
-    return updated;
+    const current = await Article.findById(id);
+    if (!current) throw notFound('Article');
+    await checkInput(input, current.name);
+    return Article.findByIdAndUpdate(id, input, { new: true });
   },
 
   // Deleting an article also deletes its transactions (historical behavior).

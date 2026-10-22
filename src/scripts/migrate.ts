@@ -29,6 +29,8 @@ const formatDay = (date: unknown) =>
 // The same bug sent the date as "DD/MM/YYYY", which the server read as
 // "MM/DD/YYYY": day and month were swapped. The original date cannot be
 // known for sure, so dates are only listed for a manual check, never changed.
+// The list is incomplete: a transaction whose type was re-picked during the
+// buggy edit got a valid type back and can no longer be detected.
 async function reportSwappedDates(type: unknown) {
   const docs = await Transaction.collection
     .find({ transaction_type: type })

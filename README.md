@@ -121,6 +121,13 @@ needed. One data fix is available for transactions damaged by an old bug.
    ```
 5. Open the transactions listed in the report and check their dates.
 
+Deploy the back-end and the front-end **together**. The new API rejects
+the corrupted data the old front-end sent when a transaction was edited, so
+with the old front-end, editing a transaction fails (it no longer damages it).
+
+The date list printed by step 3 may be incomplete: a transaction whose type
+was chosen again during the faulty edit cannot be detected any more.
+
 The fix only rewrites `"Vendu"`/`"Déposé"`/`"Repris"` into the codes
 `sell`/`deposite`/`retrieve`, which is what every version of the app
 expects: going back to the previous images stays possible at any time.

@@ -8,10 +8,12 @@ export function createApp(corsOrigins: string[]) {
   const app = express();
 
   app.disable('x-powered-by');
+  // cors first, so even error responses (e.g. invalid JSON) can be read by
+  // the browser.
+  app.use(cors({ credentials: true, origin: corsOrigins }));
   app.use(express.json());
   // Strips keys starting with "$" from the input (MongoDB operator injection).
   app.use(mongoSanitize());
-  app.use(cors({ credentials: true, origin: corsOrigins }));
 
   app.use('/', mainRouter());
 

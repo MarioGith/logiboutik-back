@@ -1,6 +1,7 @@
 // Restores a backup file (downloaded with the "Sauvegarder les données"
 // button) into an EMPTY database. It refuses to touch a database that
 // already contains data, so it can never overwrite anything.
+// If a restore stops halfway, drop the target database before trying again.
 //
 //   pnpm restore path/to/logiboutik-backup.json
 import fs from 'fs';

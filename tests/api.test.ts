@@ -87,6 +87,25 @@ describe.skipIf(!url)('API', () => {
     await request(app).get('/income').expect(400);
   });
 
+  it('keeps articles with a duplicate name (older data) editable', async () => {
+    const shop = await createShop();
+    const first = await createArticle(shop, 'pot', 10);
+    const second = new mongoose.Types.ObjectId();
+    await mongoose.connection.db.collection('articles').insertOne({
+      _id: second,
+      name: 'pot',
+      price: 5,
+      shop: new mongoose.Types.ObjectId(shop),
+    });
+
+    for (const id of [first, String(second)]) {
+      await request(app)
+        .post(`/article/${id}`)
+        .send({ name: 'pot', price: 7, shop })
+        .expect(200);
+    }
+  });
+
   it('refuses to delete a shop that still has articles', async () => {
     const shop = await createShop();
     const article = await createArticle(shop);

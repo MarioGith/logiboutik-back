@@ -5,9 +5,8 @@ interface ShopInput {
   name: string;
 }
 
-async function ensureNameIsFree(name: string, exceptId?: string) {
-  const existing = await Shop.findOne({ name });
-  if (existing && String(existing._id) !== exceptId) {
+async function ensureNameIsFree(name: string) {
+  if (await Shop.exists({ name })) {
     throw conflict('shop_exists', 'Shop already exists');
   }
 }
@@ -33,10 +32,12 @@ export const shopModel = {
   },
 
   async update(id: string, input: ShopInput) {
-    await ensureNameIsFree(input.name, id);
-    const updated = await Shop.findByIdAndUpdate(id, input, { new: true });
-    if (!updated) throw notFound('Shop');
-    return updated;
+    const current = await Shop.findById(id);
+    if (!current) throw notFound('Shop');
+    // Keeping the current name is always allowed, so shops that already
+    // share a name (older data) stay editable.
+    if (input.name !== current.name) await ensureNameIsFree(input.name);
+    return Shop.findByIdAndUpdate(id, input, { new: true });
   },
 
   // A shop that still has articles cannot be deleted: it would leave
