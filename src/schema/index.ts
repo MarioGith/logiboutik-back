@@ -1,12 +1,6 @@
-import { articleSchema, ArticleDoc } from './ArticleSchema';
-import { shopSchema, ShopDoc } from './ShopSchema';
-import { transactionSchema, TransactionDoc } from './TransactionSchema';
-
-export {
-  articleSchema,
-  ArticleDoc,
-  shopSchema,
-  ShopDoc,
-  transactionSchema,
-  TransactionDoc,
-};
+export { Article } from './ArticleSchema';
+export type { ArticleDoc } from './ArticleSchema';
+export { Shop } from './ShopSchema';
+export type { ShopDoc } from './ShopSchema';
+export { Transaction, TRANSACTION_TYPES } from './TransactionSchema';
+export type { TransactionDoc, TransactionType } from './TransactionSchema';

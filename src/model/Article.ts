@@ -1,111 +1,59 @@
-import { articleSchema, ArticleDoc, TransactionDoc } from '../schema';
-import { articleValidator } from '../validator';
-import { transactionModel } from '.';
-import mongoose from 'mongoose';
+import { Article, Shop, Transaction } from '../schema';
+import { badRequest, conflict, notFound } from '../errors';
+import { totalStock } from './calculations';
 
-interface IArticleModel {
-  list: (filter?: any) => Promise<any>;
-  create: (newArticle: ArticleDoc) => Promise<{ message: string }>;
-  read: (_id: mongoose.Types.ObjectId) => Promise<any>;
-  update: (
-    updatedArticle: ArticleDoc
-  ) => Promise<{ message: string; data?: ArticleDoc | null; error?: any }>;
-  delete: (_id: mongoose.Types.ObjectId) => Promise<any>;
+interface ArticleInput {
+  name: string;
+  price: number;
+  shop: string;
 }
 
-export const articleModel: IArticleModel = {
-  list: async function (filter = {}) {
-    try {
-      const articles = await articleSchema
-        .find(filter)
-        .populate('shop', 'name');
-      return articles;
-    } catch (err) {
-      console.error('Error listing articles:', err);
-      throw err;
-    }
+// `currentName` is the name before an update: keeping it is always allowed,
+// so articles that already share a name (older data) stay editable.
+async function checkInput(input: ArticleInput, currentName?: string) {
+  if (!(await Shop.exists({ _id: input.shop }))) {
+    throw badRequest('shop does not exist');
+  }
+  if (
+    input.name !== currentName &&
+    (await Article.exists({ name: input.name }))
+  ) {
+    throw conflict('article_exists', 'Article already exists');
+  }
+}
+
+export const articleModel = {
+  list() {
+    return Article.find().populate('shop', 'name').sort({ name: 1 }).lean();
   },
 
-  create: async function (newArticle) {
-    try {
-      const alreadyExist = await articleValidator(newArticle.name);
-      if (alreadyExist) {
-        return { message: 'Article already exists' };
-      }
-
-      const _article = new articleSchema({
-        name: newArticle.name,
-        price: newArticle.price,
-        shop: newArticle.shop,
-      });
-
-      await _article.save();
-      return { message: 'Article registered' };
-    } catch (err) {
-      console.error('Error creating article:', err);
-      throw err;
-    }
+  // Article details, its transaction history and its current stock.
+  async read(id: string) {
+    const details = await Article.findById(id).lean();
+    if (!details) throw notFound('Article');
+    const historic = await Transaction.find({ article: id })
+      .populate('article', 'name')
+      .sort({ date: -1 })
+      .lean();
+    return { historic, details, stock: totalStock(historic) };
   },
 
-  read: async function (_id) {
-    try {
-      const historic = await transactionModel.list({ article: _id });
-      const stock = historic.reduce(
-        (pv: number, cv: { transaction_type: string; quantity: number }) => {
-          if (cv.transaction_type === 'deposite') {
-            return pv + cv.quantity;
-          } else {
-            return pv - cv.quantity;
-          }
-        },
-        0
-      );
-      const details = await articleSchema.findById(_id);
-      return { historic: historic, details: details, stock: stock };
-    } catch (err) {
-      console.error('Error reading article:', err);
-      throw err;
-    }
+  async create(input: ArticleInput) {
+    await checkInput(input);
+    return Article.create(input);
   },
 
-  update: async function (updatedArticle) {
-    try {
-      const updated = await articleSchema.findByIdAndUpdate(
-        { _id: updatedArticle._id },
-        {
-          name: updatedArticle.name,
-          price: updatedArticle.price,
-          shop: updatedArticle.shop,
-        },
-        { new: true }
-      );
-
-      if (updated) {
-        return { message: 'Article modified', data: updated };
-      } else {
-        return { message: 'Article not found', data: null };
-      }
-    } catch (err) {
-      console.error('Error updating article:', err);
-      return { message: 'Error updating article', error: err };
-    }
+  async update(id: string, input: ArticleInput) {
+    const current = await Article.findById(id);
+    if (!current) throw notFound('Article');
+    await checkInput(input, current.name);
+    return Article.findByIdAndUpdate(id, input, { new: true });
   },
 
-  delete: async function (_id) {
-    try {
-      const transactions = await transactionModel.list({ article: _id });
-
-      await Promise.all(
-        transactions.map(async (trans: TransactionDoc) => {
-          await transactionModel.delete(trans._id);
-        })
-      );
-
-      await articleSchema.findByIdAndDelete({ _id: _id });
-      return { message: 'Article deleted' };
-    } catch (err) {
-      console.error('Error deleting article:', err);
-      throw err;
-    }
+  // Deleting an article also deletes its transactions (historical behavior).
+  async delete(id: string) {
+    const deleted = await Article.findByIdAndDelete(id);
+    if (!deleted) throw notFound('Article');
+    await Transaction.deleteMany({ article: id });
   },
 };

@@ -1,89 +1,52 @@
-import { shopSchema, ShopDoc } from '../schema';
-import { shopValidator } from '../validator';
-import { articleModel } from '.';
-import { Types } from 'mongoose';
+import { Article, Shop } from '../schema';
+import { conflict, notFound } from '../errors';
 
-interface IShopModel {
-  list: (filter?: any) => Promise<Array<ShopDoc>>;
-  create: (newShop: any) => Promise<string>;
-  read: (
-    _id: Types.ObjectId
-  ) => Promise<{ articles: any; details: ShopDoc | null }>;
-  update: (
-    updatedShop: any
-  ) => Promise<{ message: string; data: ShopDoc | null }>;
-  delete: (_id: Types.ObjectId) => Promise<{ message: string; data?: any }>;
+interface ShopInput {
+  name: string;
 }
 
-export const shopModel: IShopModel = {
-  list: async function (filter = {}) {
-    try {
-      const shops = await shopSchema.find(filter);
-      return shops;
-    } catch (err: any) {
-      console.error('Error listing shops:', err);
-      return [];
-    }
+async function ensureNameIsFree(name: string) {
+  if (await Shop.exists({ name })) {
+    throw conflict('shop_exists', 'Shop already exists');
+  }
+}
+
+export const shopModel = {
+  list() {
+    return Shop.find().sort({ name: 1 }).lean();
   },
 
-  create: async function (newShop) {
-    try {
-      const alreadyExist = await shopValidator(newShop.name);
-      if (!alreadyExist) {
-        const _shop = new shopSchema();
-        _shop.name = newShop.name;
-        await _shop.save();
-        return 'Shop registered';
-      } else {
-        throw new Error('Shop already exists');
-      }
-    } catch (err: any) {
-      console.error('Error creating shop:', err);
-      return err.message;
-    }
+  async read(id: string) {
+    const details = await Shop.findById(id).lean();
+    if (!details) throw notFound('Shop');
+    const articles = await Article.find({ shop: id })
+      .populate('shop', 'name')
+      .sort({ name: 1 })
+      .lean();
+    return { articles, details };
   },
 
-  read: async function (_id) {
-    try {
-      const articles = await articleModel.list({ shop: _id });
-      const details = await shopSchema.findById(_id);
-      return { articles: articles, details: details };
-    } catch (err: any) {
-      console.error('Error reading shop:', err);
-      return { articles: [], details: null };
-    }
+  async create(input: ShopInput) {
+    await ensureNameIsFree(input.name);
+    return Shop.create(input);
   },
 
-  update: async function (updatedShop) {
-    try {
-      const updated = await shopSchema.findByIdAndUpdate(
-        { _id: updatedShop._id },
-        {
-          name: updatedShop.name,
-        },
-        { new: true } // This option returns the modified document rather than the original
-      );
-
-      if (updated) {
-        return { message: 'Shop modified', data: updated };
-      } else {
-        return { message: 'Shop not found', data: null };
-      }
-    } catch (err: any) {
-      console.error('Error updating shop:', err);
-      return { message: 'Error updating shop', data: null };
-    }
+  async update(id: string, input: ShopInput) {
+    const current = await Shop.findById(id);
+    if (!current) throw notFound('Shop');
+    // Keeping the current name is always allowed, so shops that already
+    // share a name (older data) stay editable.
+    if (input.name !== current.name) await ensureNameIsFree(input.name);
+    return Shop.findByIdAndUpdate(id, input, { new: true });
   },
 
-  delete: async function (_id) {
-    try {
-      await shopSchema.findByIdAndDelete({ _id: _id });
-      return {
-        message: 'Shop deleted',
-      };
-    } catch (err: any) {
-      console.error('Error deleting shop:', err);
-      return { message: 'Error deleting shop' };
+  // A shop that still has articles cannot be deleted: it would leave
+  // articles pointing to nothing.
+  async delete(id: string) {
+    if (await Article.exists({ shop: id })) {
+      throw conflict('shop_has_articles', 'Shop still has articles');
     }
+    const deleted = await Shop.findByIdAndDelete(id);
+    if (!deleted) throw notFound('Shop');
   },
 };

@@ -1,133 +1,56 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import {
   articleHandler,
+  reportHandler,
   shopHandler,
   transactionHandler,
-  stockHandler,
-  incomeHandler,
-  backupHandler,
 } from './handler';
-import { dashboardHandler } from './handler/DashboardHandler';
+import { notFound } from './errors';
+import { isValidId } from './validator';
 
-// Wraps an async route handler so any rejection is forwarded to Express'
-// error-handling middleware instead of leaving the request hanging.
+type Handler = (req: Request, res: Response) => Promise<void>;
+
+// Forwards errors thrown by async handlers to the error middleware in app.ts.
 const wrap =
-  (fn: (req: express.Request, res: express.Response) => Promise<void>) =>
-  (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ): void => {
-    Promise.resolve(fn(req, res)).catch(next);
+  (handler: Handler) => (req: Request, res: Response, next: NextFunction) => {
+    handler(req, res).catch(next);
   };
+
+// Adds the five CRUD routes of a resource. Updates use POST /<name>/:_id,
+// which is what the front-end has always called.
+function crud(
+  router: express.Router,
+  name: string,
+  handler: Record<'list' | 'get' | 'create' | 'update' | 'delete', Handler>,
+) {
+  router.get(`/${name}`, wrap(handler.list));
+  router.get(`/${name}/:_id`, wrap(handler.get));
+  router.post(`/${name}`, wrap(handler.create));
+  router.post(`/${name}/:_id`, wrap(handler.update));
+  router.delete(`/${name}/:_id`, wrap(handler.delete));
+}
 
 export function mainRouter() {
   const router = express.Router();
 
-  router.get('/', (req, res) =>
-    res.status(200).json({
-      message: 'Logibouik API is up !',
-      //version,
-    })
+  // A malformed id can never match a document: answer 404 right away.
+  router.param('_id', (req, res, next, id) =>
+    next(isValidId(id) ? undefined : notFound('Document')),
   );
 
-  // GET Global
-  router.get(
-    '/article',
-    wrap((req, res) => articleHandler.getArticles(req, res))
-  );
-  router.get(
-    '/shop',
-    wrap((req, res) => shopHandler.getShops(req, res))
-  );
-  router.get(
-    '/transaction',
-    wrap((req, res) => transactionHandler.getTransactions(req, res))
-  );
+  router.get('/', (req, res) => {
+    res.json({ message: 'Logiboutik API is up !' });
+  });
 
-  // GET Details
-  router.get(
-    '/article/:_id',
-    wrap((req, res) => articleHandler.get(req, res))
-  );
-  router.get(
-    '/shop/:_id',
-    wrap((req, res) => shopHandler.get(req, res))
-  );
-  router.get(
-    '/transaction/:_id',
-    wrap((req, res) => transactionHandler.get(req, res))
-  );
+  crud(router, 'article', articleHandler);
+  crud(router, 'shop', shopHandler);
+  crud(router, 'transaction', transactionHandler);
 
-  // POST
-  router.post(
-    '/article',
-    wrap((req, res) => articleHandler.post(req, res))
-  );
-  router.post(
-    '/shop',
-    wrap((req, res) => shopHandler.post(req, res))
-  );
-  router.post(
-    '/transaction',
-    wrap((req, res) => transactionHandler.post(req, res))
-  );
-
-  // UPDATE
-  router.post(
-    '/article/:_id',
-    wrap((req, res) => articleHandler.put(req, res))
-  );
-  router.post(
-    '/shop/:_id',
-    wrap((req, res) => shopHandler.put(req, res))
-  );
-  router.post(
-    '/transaction/:_id',
-    wrap((req, res) => transactionHandler.put(req, res))
-  );
-
-  // DELETE
-  router.delete(
-    '/article/:_id',
-    wrap((req, res) => articleHandler.delete(req, res))
-  );
-  router.delete(
-    '/shop/:_id',
-    wrap((req, res) => shopHandler.delete(req, res))
-  );
-  router.delete(
-    '/transaction/:_id',
-    wrap((req, res) => transactionHandler.delete(req, res))
-  );
-
-  // FACTURE
-  router.get(
-    '/income',
-    wrap((req, res) => incomeHandler.getIncome(req, res))
-  );
-
-  // STOCK
-  router.get(
-    '/stock',
-    wrap((req, res) => stockHandler.getStock(req, res))
-  );
-
-  // DASHBOARD
-  router.get(
-    '/dashboard/income',
-    wrap((req, res) => dashboardHandler.getTotalIncome(req, res))
-  );
-  router.get(
-    '/dashboard/sell',
-    wrap((req, res) => dashboardHandler.getTotalSell(req, res))
-  );
-
-  // BACKUP
-  router.get(
-    '/backup',
-    wrap((req, res) => backupHandler.getBackup(req, res))
-  );
+  router.get('/stock', wrap(reportHandler.stock));
+  router.get('/income', wrap(reportHandler.income));
+  router.get('/dashboard/sell', wrap(reportHandler.totalSell));
+  router.get('/dashboard/income', wrap(reportHandler.totalIncome));
+  router.get('/backup', wrap(reportHandler.backup));
 
   return router;
 }

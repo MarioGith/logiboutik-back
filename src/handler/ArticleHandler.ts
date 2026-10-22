@@ -1,64 +1,28 @@
+import { Request, Response } from 'express';
 import { articleModel } from '../model';
+import { parseArticleInput } from '../validator';
 
-interface IArticleHandler {
-  getArticles: (req: any, res: any) => Promise<void>;
-  get: (req: any, res: any) => Promise<void>;
-  post: (req: any, res: any) => Promise<void>;
-  put: (req: any, res: any) => Promise<void>;
-  delete: (req: any, res: any) => Promise<void>;
-}
-
-export const articleHandler: IArticleHandler = {
-  getArticles: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+export const articleHandler = {
+  async list(req: Request, res: Response) {
+    res.json(await articleModel.list());
   },
-  get: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async get(req: Request, res: Response) {
+    res.json(await articleModel.read(req.params._id));
   },
-  post: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async create(req: Request, res: Response) {
+    await articleModel.create(parseArticleInput(req.body));
+    res.json({ message: 'Article registered' });
   },
-  put: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async update(req: Request, res: Response) {
+    await articleModel.update(req.params._id, parseArticleInput(req.body));
+    res.json({ message: 'Article modified' });
   },
-  delete: function (): Promise<void> {
-    throw new Error('Function not implemented.');
+
+  async delete(req: Request, res: Response) {
+    await articleModel.delete(req.params._id);
+    res.status(200).send();
   },
-};
-
-// HTTP
-
-articleHandler.getArticles = async (req, res) => {
-  const docs = await articleModel.list();
-  res.status(200).json(docs);
-};
-
-articleHandler.get = async (req, res) => {
-  const docs = await articleModel.read(req.params._id);
-  res.status(200).json(docs);
-};
-
-articleHandler.post = async (req, res) => {
-  const docs = await articleModel.create(req.body);
-  if (docs.message === 'Article registered') {
-    res.status(200).send({ message: 'Article registered' });
-  } else {
-    res.status(409).send({ message: 'Article already exists' });
-  }
-};
-
-articleHandler.put = async (req, res) => {
-  const docs = await articleModel.update(req.body);
-  if (docs.message === 'Article modified') {
-    res.status(200).send({ message: 'Article modified' });
-  } else if (docs.message === 'Article not found') {
-    res.status(404).send({ message: docs.message });
-  } else {
-    res.status(500).send({ message: 'Error' });
-  }
-};
-
-articleHandler.delete = async (req, res) => {
-  await articleModel.delete(req.params._id);
-  res.status(200).send();
 };

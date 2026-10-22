@@ -1,15 +1,4 @@
-import { articleHandler } from './ArticleHandler';
-import { shopHandler } from './ShopHandler';
-import { transactionHandler } from './TransactionHandler';
-import { stockHandler } from './StockHandler';
-import { incomeHandler } from './IncomeHandler';
-import { backupHandler } from './BackupHandler';
-
-export {
-  articleHandler,
-  shopHandler,
-  transactionHandler,
-  stockHandler,
-  incomeHandler,
-  backupHandler,
-};
+export { articleHandler } from './ArticleHandler';
+export { shopHandler } from './ShopHandler';
+export { transactionHandler } from './TransactionHandler';
+export { reportHandler } from './ReportHandler';

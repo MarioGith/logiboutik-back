@@ -1,6 +1,10 @@
 node_modules/
-.husky/
 dist/
-docker-compose.yml
+coverage/
+.git/
+.github/
+.husky/
+tests/
 .env
-.dockerignore
+.env.*
+docker-compose.yml
