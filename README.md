@@ -97,3 +97,31 @@ articles cannot be deleted.
 
 Pushing to `main` builds and publishes the `logiboutik-back:latest` Docker
 image. Pull requests and `dev` only build it.
+
+## Upgrading production (v1.0 → v1.1)
+
+The new version reads the existing database as it is: no schema change is
+needed. One data fix is available for transactions damaged by an old bug.
+
+1. **Back up** — click "Sauvegarder les données" on the dashboard, and also
+   take a MongoDB dump:
+   ```bash
+   docker exec <mongo-container> mongodump --db boutikdac --gzip --archive=/tmp/boutikdac.gz
+   docker cp <mongo-container>:/tmp/boutikdac.gz ./boutikdac-$(date +%F).gz
+   ```
+2. **Deploy** the new `logiboutik-back` and `logiboutik-front` images
+   (`docker compose pull && docker compose up -d`).
+3. **Check** the data (read-only) and keep the output:
+   ```bash
+   docker exec api node dist/scripts/migrate.js | tee migrate-report.txt
+   ```
+4. **Fix** the transaction types if the report lists some:
+   ```bash
+   docker exec api node dist/scripts/migrate.js --apply
+   ```
+5. Open the transactions listed in the report and check their dates.
+
+The fix only rewrites `"Vendu"`/`"Déposé"`/`"Repris"` into the codes
+`sell`/`deposite`/`retrieve`, which is what every version of the app
+expects: going back to the previous images stays possible at any time.
+To restore the dump: `mongorestore --gzip --archive=<file> --drop`.
